@@ -31,7 +31,7 @@ module.exports = function ItemCache(mod) {
 		if(event.unk !== 1) return // Type?
 
 		lock = true
-		for(let data of inven) mod.send(data)
+		for(let data of inven) mod.toClient(data)
 		return lock = false
 	})
 
@@ -45,7 +45,7 @@ module.exports = function ItemCache(mod) {
 			offset: data.readInt32LE(24)
 		}
 
-		if(mod.game.me.is(!event.gameId) || event.action) return
+		if(!mod.game.me.is(event.gameId) || event.action) return
 
 		let wareType = ware[event.type]
 
@@ -60,13 +60,13 @@ module.exports = function ItemCache(mod) {
 	})
 
 	mod.hook('C_VIEW_WARE', 2, HOOK_LAST, event => {
-		if(mod.game.me.is(!event.gameId)) return
+		if(!mod.game.me.is(event.gameId)) return
 
 		const wareType = ware[event.type]
 
 		if(wareType && wareType[event.offset]) {
 			lock = true
-			mod.send(wareType[event.offset]) // Pre-send the requested page
+			mod.toClient(wareType[event.offset]) // Pre-send the requested page
 			lock = false
 		}
 	})
