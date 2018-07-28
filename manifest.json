@@ -1,0 +1,12 @@
+{
+  "files": {
+    "index.js": "62a8c392d008c9fef771311b665ca96bab73b38fb0134b33e10a612d27c0c73e",
+    "module.json": "d4ec7502f9d425ba9bd4c3c5375dd7fd7b933fd411a1a83c0876cee70d5da477"
+  },
+  "defs": {
+  	"S_INVEN": "raw",
+    "C_SHOW_INVEN": 1,
+    "S_VIEW_WARE_EX": "raw",
+    "C_VIEW_WARE": 2
+  }
+}

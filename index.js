@@ -1,19 +1,18 @@
 const HOOK_LAST = {order: 100, filter: {fake: null}}
+const Long = require('long')
 
-module.exports = function ItemCache(dispatch) {
-	let gameId = null,
-		lock = false,
+module.exports = function ItemCache(mod) {
+	let lock = false,
 		inven = null,
 		invenNew = null,
 		ware = {}
 
-	dispatch.hook('S_LOGIN', 10, event => {
-		({gameId} = event)
+	mod.game.on('enter_game', () => {
 		inven = invenNew = null
 		delete ware[9] // Pet bank
 	})
 
-	dispatch.hook('S_INVEN', 'raw', HOOK_LAST, (code, data) => {
+	mod.hook('S_INVEN', 'raw', HOOK_LAST, (code, data) => {
 		if(lock) return
 
 		if(data[25]) invenNew = [] // Check first flag
@@ -28,25 +27,25 @@ module.exports = function ItemCache(dispatch) {
 		}
 	})
 
-	dispatch.hook('C_SHOW_INVEN', 1, HOOK_LAST, event => {
+	mod.hook('C_SHOW_INVEN', 1, HOOK_LAST, event => {
 		if(event.unk !== 1) return // Type?
 
 		lock = true
-		for(let data of inven) dispatch.toClient(data)
+		for(let data of inven) mod.send(data)
 		return lock = false
 	})
 
-	dispatch.hook('S_VIEW_WARE_EX', 'raw', HOOK_LAST, (code, data) => {
+	mod.hook('S_VIEW_WARE_EX', 'raw', HOOK_LAST, (code, data) => {
 		if(lock) return
 
 		const event = {
-			gameId: BigInt(data.readUInt32LE(8)) | BigInt(data.readUInt32LE(12)) << 32n,
+			gameId: new Long(data.readInt32LE(8), data.readInt32LE(12), true),
 			type: data.readInt32LE(16),
 			action: data.readInt32LE(20),
 			offset: data.readInt32LE(24)
 		}
 
-		if(event.gameId !== gameId || event.action) return
+		if(mod.game.me.is(!event.gameId) || event.action) return
 
 		let wareType = ware[event.type]
 
@@ -60,14 +59,14 @@ module.exports = function ItemCache(dispatch) {
 		wareType[event.offset] = Buffer.from(data)
 	})
 
-	dispatch.hook('C_VIEW_WARE', 2, HOOK_LAST, event => {
-		if(event.gameId !== gameId) return
+	mod.hook('C_VIEW_WARE', 2, HOOK_LAST, event => {
+		if(mod.game.me.is(!event.gameId)) return
 
 		const wareType = ware[event.type]
 
 		if(wareType && wareType[event.offset]) {
 			lock = true
-			dispatch.toClient(wareType[event.offset]) // Pre-send the requested page
+			mod.send(wareType[event.offset]) // Pre-send the requested page
 			lock = false
 		}
 	})
